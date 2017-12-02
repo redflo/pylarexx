@@ -4,16 +4,13 @@ Pylarexx searches the USB bus for [Arexx](http://www.arexx.com/templogger/html/e
 
 At the moment the BS-510 / TL-510 devices are not supported, since i have no such device. New Arexx sensors have id values that exceed 2 bytes and need this newer device. Would be nice, if someone sends me a device or a patch.
 
-The sensors that i have tested are TSN-TH70E and TL-3TSN, both with 2-byte id numbers (<65536). If you have other sensors, you can send me sensors or debugging output, and i will try to add them.
-
-
-
-
+The sensors that i have tested are TSN-TH70E and TL-3TSN, both with 2-byte id numbers (<65536). If you have other sensors (CO2, ...), you can send me sensors or debugging output, and i will try to add them.
 
 
   
 ## Installation
 
+Installing and running pylarexx requires root privileges. 
 The install.sh should put the code to /usr/local/pylarexx, a example config to /etc/pylarexx.yml and on systemd based systems, it creates a service.
 
 ## Configuration
@@ -21,7 +18,7 @@ The install.sh should put the code to /usr/local/pylarexx, a example config to /
 All configuration is done in /etc/pylarexx.yml. Be careful about indentation and "-", since this has a special meaning in yaml files. See [YAML Wikipedia Article](https://en.wikipedia.org/wiki/YAML).
 
 ### Sensors
-At *sensors* you should add the sensors as shown in the example config.
+At *sensors* you should add your sensors as shown in the example config.
 
 ### Calibration
 At *calibration* you can add calibration values. Usually the values for temperature, humidity, ... are computed from the raw value from the sensor with:
