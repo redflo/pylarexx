@@ -52,5 +52,5 @@ Look at DataListener.py to see how to implement new output modules
 
 ## License
 
-pylarexx is licensed under the Apache License, version 2, see License.txt
+pylarexx is licensed under the Apache License, version 2, see License.txt.
 The file device.xml is copyrighted by Arexx and is distributed with permission from Arexx
