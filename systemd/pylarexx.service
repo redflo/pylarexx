@@ -1,0 +1,10 @@
+[Unit]
+Description=Python Logger Arexx Daemon
+
+[Service]
+Type=simple
+ExecStart=/usr/local/pylarexx/pylarexx.py -f /etc/pylarexx.yml
+WorkingDirectory=/usr/local/pylarexx
+
+[Install]
+WantedBy=multi-user.target

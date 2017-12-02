@@ -1,0 +1,31 @@
+sensors:
+    - id: 17208
+      name: Living room
+      type: TSN-TH70E
+    - id: 18138
+      name: Bathroom
+      type: TSN-TH70E
+    - id: 9376
+      name: Hobby
+      type: TL-3TSN
+calibration:
+    - id: 17208
+      values:
+          0: 1.56
+    - id: 17209
+      values: 
+          0: -8.43
+          1: 0.0
+output:
+    - type: LoggingListener
+    - type: FileOutListener
+      params:
+          filename: /tmp/arexx.out
+    - type: RecentValuesListener
+      params:
+          host: 0.0.0.0
+          port: 3333
+    
+   
+
+

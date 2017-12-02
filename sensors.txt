@@ -1,0 +1,24 @@
+There is a device.xml coming with the original software
+The <devicetype> has nodes:
+<m1> : Typemask 1
+<m2> : Typemask 2
+<type> : Type: 1 Temperature, 3 Humidity, 5 CO2, 7 Voltage, 9 Time, 11 Counts, 13 OnOff, 15 CO2, 17 Distance
+<dm> : Device Mask
+<scale> : Scale (unused for now, but linux source code shows polynomial or logarithmic scales)
+<vLo> : lower Value
+<vUp> : upper Value
+<i> : signed/unsigned Word
+<p> : Parameter. Fist is offset, second multiplicator, next higher polynomial parameter
+
+Computation:
+number of <p> nodes:
+
+2 nodes:
+value=p0 + rawValue*p1
+
+3 nodes:
+value=p0 + rawValue*(p1 + rawValue*p2)
+
+Value has to be within vLo and vUp
+
+
