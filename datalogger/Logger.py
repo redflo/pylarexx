@@ -7,7 +7,6 @@ Created on 23.11.2017
 '''
 
 import usb.core
-import usb.util
 import time
 import math
 import array
@@ -43,29 +42,30 @@ class TLX00(object):
         if 'sensors' in self.config:
             try:
                 for sensor in self.config['sensors']:
-                    id=int(sensor['id'])
-                    type=sensor['type']
+                    sensorid=int(sensor['id'])
+                    sensortype=sensor['type']
                     name=sensor['name']
-                    logging.info("Adding Sensor from config file: %d %s %s"%(id,type,name))
-                    if type in ('TL-3TSN','TSN-50E','TSN-EXT44','TSN-33MN'):               
-                        self.sensors[id]=datalogger.Sensor.ArexxTemperatureSensor(id,type,name)
-                    elif type in ('TSN-TH70E', 'TSN-TH77ext'):
-                        self.sensors[id]=datalogger.Sensor.ArexxTemperatureSensor(id,type,name)
-                        self.sensors[id+1]=datalogger.Sensor.ArexxHumiditySensor(id+1,type,name)
+                    logging.info("Adding Sensor from config file: %d %s %s"%(sensorid,sensortype,name))
+                    if sensortype in ('TL-3TSN','TSN-50E','TSN-EXT44','TSN-33MN'):
+                        self.sensors[sensorid]=datalogger.Sensor.ArexxTemperatureSensor(sensorid,sensortype,name)
+                    elif sensortype in ('TSN-TH70E', 'TSN-TH77ext'):
+                        self.sensors[sensorid]=datalogger.Sensor.ArexxTemperatureSensor(sensorid,sensortype,name)
+                        self.sensors[sensorid+1]=datalogger.Sensor.ArexxHumiditySensor(sensorid+1,sensortype,name)
                     else:
-                        self.addSensor(id, name, type)
+                        self.addSensor(sensorid, name, sensortype)
             except Exception as e:
                 logging.error('Error in config section sensors: %s',e)
-                                        
+
         if 'calibration' in self.config:
             for c in self.config['calibration']:
                 try:
-                    sensorid=c['id']               
-                    if not id in self.sensors:
+                    sensorid=int(c['id'])               
+                    if not sensorid in self.sensors:
                         logging.error('Calibration values found for sensor %i, but sensor not defined in config',sensorid)
-                        break;
+                        continue;
                     for n,v in c['values'].items():
-                         self.sensors[sensorid].calibrationValues[n] = float(v)
+                        self.sensors[sensorid].calibrationValues[n] = float(v)
+                        logging.debug("Calibration value for sensor %d oder %d value %f"%(sensorid,n,float(v)))
                 except Exception as e:
                     logging.error('Error in config section calibration: %s',e)
 
@@ -73,20 +73,20 @@ class TLX00(object):
         if 'output' in self.config:
             for logger in self.config['output']:
                 try:
-                    type = logger.get('type')
+                    loggerType = logger.get('type')
                     params= logger.get('params',{})
-                    listenerClass = getattr(datalogger.DataListener,type)
+                    listenerClass = getattr(datalogger.DataListener,loggerType)
                     self.registerDataListener(listenerClass(params))
                 except Exception as e:
                     logging.error('Error in config section output: %s',e)
     
-    def addSensor(self,id,name='Unknown',type='Unknown'):
-        if id%2 == 0:
+    def addSensor(self,sensorid,name='Unknown',sensortype='Unknown'):
+        if sensorid%2 == 0:
             logging.info("Adding guessed Temperature Sensor")
-            self.sensors[id] = datalogger.Sensor.ArexxTemperatureSensor(id,type,name)
-        if id%2 == 1:
+            self.sensors[sensorid] = datalogger.Sensor.ArexxTemperatureSensor(sensorid,sensortype,name)
+        if sensorid%2 == 1:
             logging.info("Adding guessed Humidity Sensor")
-            self.sensors[id] = datalogger.Sensor.ArexxHumiditySensor(id,type,name)
+            self.sensors[sensorid] = datalogger.Sensor.ArexxHumiditySensor(sensorid,sensortype,name)
     
     def clearRequestBuffer(self):
         # no more than 5 bytes are written to the buffer
