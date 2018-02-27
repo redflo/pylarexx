@@ -6,7 +6,7 @@ pylarexx -- Reads data from a Arexx TL-300 or TL-500 Datalogger
 
 @author:     Florian Gleixner
 
-@copyright:  2017. All rights reserved.
+@copyright:  2018. All rights reserved.
 
 @license:    pylarexx is licensed under the Apache License, version 2, see License.txt
 
@@ -21,9 +21,9 @@ from argparse import RawDescriptionHelpFormatter
 import logging
 
 __all__ = []
-__version__ = 0.1
+__version__ = 0.2
 __date__ = '2017-11-22'
-__updated__ = '2017-11-22'
+__updated__ = '2018-02-27'
 
 DEBUG = 0
 TESTRUN = 0

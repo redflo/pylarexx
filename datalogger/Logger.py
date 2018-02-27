@@ -30,6 +30,7 @@ class TLX00(object):
         self.sensors={}
         self.requestBuffer = array.array('B', [0]*64)
         self.config={}
+        self.detectUnknownSensors=True
         if 'conffile' in params:
             self.readConfigFile(params['conffile'])
     
@@ -79,6 +80,14 @@ class TLX00(object):
                     self.registerDataListener(listenerClass(params))
                 except Exception as e:
                     logging.error('Error in config section output: %s',e)
+                    
+        if 'config' in self.config:
+            if 'DetectUnknownSensors' in self.config['config']:
+                cfgtmp=self.config['config']['DetectUnknownSensors']
+                if cfgtmp.lower() in ('yes','true'):
+                    self.detectUnknownSensors=True
+                if cfgtmp.lower() in ('no','false'):
+                    self.detectUnknownSensors=False
     
     def addSensor(self,sensorid,name='Unknown',sensortype='Unknown'):
         if sensorid%2 == 0:
@@ -170,7 +179,7 @@ class TLX00(object):
                 signal=None
                 if data[pos] == 10:
                     signal = int.from_bytes([data[pos+9]],byteorder = 'little', signed=False)
-                if not sensorid in self.sensors:
+                if not sensorid in self.sensors and self.detectUnknownSensors:
                     self.addSensor(sensorid)
                     
                 datapoints.append({'sensorid': sensorid, 'rawvalue': rawvalue, 'timestamp': timestamp+self.TIME_OFFSET, 'signal':signal, 'sensor': self.sensors[sensorid]})

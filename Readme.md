@@ -50,6 +50,13 @@ Planned:
 
 Look at DataListener.py to see how to implement new output modules
 
+### Other config
+
+At *config* there are some other configuration options:
+
+* DetectUnknownSensors: Default: yes. If set to "no", pylarexx will only see the configured sensors. Good if you have other types of sensors, that create ghost entries.
+
+
 ## License
 
 pylarexx is licensed under the Apache License, version 2, see License.txt.

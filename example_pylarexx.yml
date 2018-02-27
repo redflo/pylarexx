@@ -25,7 +25,9 @@ output:
       params:
           host: 0.0.0.0
           port: 3333
-    
+config:
+    - DetectUnknownSensors: yes
+
    
 
 
