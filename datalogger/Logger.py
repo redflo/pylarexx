@@ -179,7 +179,7 @@ class TLX00(object):
                 signal=None
                 if data[pos] == 10:
                     signal = int.from_bytes([data[pos+9]],byteorder = 'little', signed=False)
-                if not sensorid in self.sensors and self.detectUnknownSensors:
+                if self.detectUnknownSensors and sensorid not in self.sensors:
                     self.addSensor(sensorid)
                     
                 datapoints.append({'sensorid': sensorid, 'rawvalue': rawvalue, 'timestamp': timestamp+self.TIME_OFFSET, 'signal':signal, 'sensor': self.sensors[sensorid]})
