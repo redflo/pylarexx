@@ -83,11 +83,7 @@ class TLX00(object):
                     
         if 'config' in self.config:
             if 'DetectUnknownSensors' in self.config['config']:
-                cfgtmp=self.config['config']['DetectUnknownSensors']
-                if cfgtmp.lower() in ('yes','true'):
-                    self.detectUnknownSensors=True
-                if cfgtmp.lower() in ('no','false'):
-                    self.detectUnknownSensors=False
+                self.detectUnknownSensors=bool(self.config['config']['DetectUnknownSensors'])
     
     def addSensor(self,sensorid,name='Unknown',sensortype='Unknown'):
         if sensorid%2 == 0:
