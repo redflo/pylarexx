@@ -10,7 +10,7 @@ The sensors that i have tested are TSN-TH70E and TL-3TSN, both with 2-byte id nu
   
 ## Installation
 
-Installing and running pylarexx requires root privileges. 
+Pylarexx is tested with Linux. Installing and running pylarexx requires root privileges. 
 The install.sh should put the code to /usr/local/pylarexx, a example config to /etc/pylarexx.yml and on systemd based systems, it creates a service.
 
 ## Configuration
