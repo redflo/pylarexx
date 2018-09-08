@@ -105,6 +105,7 @@ class TLX00(object):
             logging.info("Found %d TL300/500 device(s) at" % len(self.devices))
             for d in self.devices:
                 d.lastTimeDataRead = 0
+                d.deviceErrors = 0
                 logging.info("Bus %d Address %d Port Number %d" % (d.bus,d.address,d.port_number))
             return True
         logging.error("No device found")
@@ -217,8 +218,13 @@ class TLX00(object):
                         for datapoint in datapoints:
                             for l in self.listeners:
                                 l.onNewData(datapoint)
+                        dev.deviceErrors = 0
                     except Exception as e:
                         logging.info("Unable to read new data: %s" % e)
+                        dev.deviceErrors += 1
+                        if dev.deviceErrors > 10 :
+                            logging.warn("Too many errors. Resetting device on Bus %d Address %d Port Number %d" % (dev.bus,dev.address,dev.port_number))
+                            dev.reset()
                         break
             # do not busy poll. Sleep one second
             logging.debug("sleeping")
