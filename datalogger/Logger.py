@@ -101,12 +101,12 @@ class TLX00(object):
     def findDevices(self):
         
         self.devices = usb.core.find(find_all= True, idVendor=0x0451, idProduct=0x3211)
-        if len(self.devices) > 0:
-            logging.info("Found %d TL300/500 device(s) at" % len(self.devices))
+        if self.devices is not None:
+            logging.info("Found TL300/500 device(s) at ")
             for d in self.devices:
                 d.lastTimeDataRead = 0
                 d.deviceErrors = 0
-                logging.info("Bus %d Address %d Port Number %d" % (d.bus,d.address,d.port_number))
+                logging.info("Bus %d Address %d Port Number %d " % (d.bus,d.address,d.port_number))
             return True
         logging.error("No device found")
         return False
