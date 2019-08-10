@@ -100,7 +100,8 @@ class TLX00(object):
                
     def findDevices(self):
         
-        self.devices = usb.core.find(find_all= True, idVendor=0x0451, idProduct=0x3211)
+        founddevices = usb.core.find(find_all= True, idVendor=0x0451, idProduct=0x3211)
+        self.devices = list(founddevices)
         if self.devices is not None:
             logging.info("Found TL300/500 device(s) at ")
             for d in self.devices:
@@ -134,8 +135,8 @@ class TLX00(object):
             self.requestBuffer[i+1]=tb[i]
         # send data
         try:
-            device.write(0x1,self.requestBuffer,0,1000)
-            device.read(0x81,64,0,1000)
+            device.write(0x1,self.requestBuffer,1000)
+            device.read(0x81,64,1000)
             device.lastTimeSync=int(time.time())
         except Exception as e:
             logging.error("Error setting time: %s",e)
@@ -193,9 +194,9 @@ class TLX00(object):
         '''    
         self.clearRequestBuffer()
         
-        while len(self.listeners) > 0:    
-            for  dev in self.devices:
-                
+        while len(self.listeners) > 0:
+            for dev in self.devices:
+                logging.debug("Polling device at Bus %d Address %d Port Number %d" % (dev.bus,dev.address,dev.port_number)) 
                 # do time sync every 900 sec
                 if int(time.time()) - dev.lastTimeSync > 900:
                     self.setTime(dev)
@@ -206,9 +207,9 @@ class TLX00(object):
                     try:
                         logging.debug("write and read data from device")
 
-                        dev.write(0x1, self.requestBuffer,0,1000)
+                        dev.write(0x1, self.requestBuffer,1000)
                         time.sleep(0.01)
-                        rawdata=dev.read(0x81,64,0,1000)
+                        rawdata=dev.read(0x81,64,1000)
                         if rawdata[0]==0 and rawdata[1]==0:
                             # no new data
                             break
