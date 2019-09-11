@@ -33,3 +33,5 @@ type 00		Report sensor data
 			u8	signal quality (units unknown)
 
 		A 0-byte tuple serves as a terminator.
+		
+Calculation of cooked values from raw is explained in sensors.txt

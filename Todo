@@ -1,6 +1,4 @@
-- handle device events (connect/disconnect)
 - even start without device and sleep, waiting for devices
 - tcp-server: make variable thread-safe (necessary?? http://effbot.org/zone/thread-synchronization.htm)
 - guessing via device.xml from windows driver
-- find usb endpoints
-- add compability for other devices: BS-510, BS-750, ...
+- add compability for other devices: BS-750, ...

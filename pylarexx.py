@@ -21,9 +21,9 @@ from argparse import RawDescriptionHelpFormatter
 import logging
 
 __all__ = []
-__version__ = 0.2
+__version__ = 0.3
 __date__ = '2017-11-22'
-__updated__ = '2018-02-27'
+__updated__ = '2019-09-11'
 
 DEBUG = 0
 TESTRUN = 0
