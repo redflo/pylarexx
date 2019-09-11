@@ -31,6 +31,7 @@ class TLX00(object):
         self.requestBuffer = array.array('B', [0]*64)
         self.config={}
         self.detectUnknownSensors=True
+        self.lastDeviceCheck=0
         if 'conffile' in params:
             self.readConfigFile(params['conffile'])
     
@@ -99,7 +100,7 @@ class TLX00(object):
             self.requestBuffer[i]=0
                
     def findDevices(self):
-        
+        self.lastDeviceCheck = math.floor(time.time())
         founddevices = usb.core.find(find_all= True, idVendor=0x0451, idProduct=0x3211)
         self.devices = list(founddevices)
         if self.devices is not None:
@@ -111,11 +112,27 @@ class TLX00(object):
             return True
         logging.error("No device found")
         return False
+    
+    def checkForNewDevices(self):
+        self.lastDeviceCheck = math.floor(time.time())
+        founddevices = usb.core.find(find_all= True, idVendor=0x0451, idProduct=0x3211)
+        numdevices = len(list(founddevices))
+        if numdevices != len(self.devices):
+            return True
+        return False
             
     def initializeDevices(self):
         for d in self.devices:
             try:
                 d.set_configuration()
+                cfg = d.get_active_configuration()
+                intf = cfg[(0,0)]
+                epo = usb.util.find_descriptor(intf, custom_match = lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_OUT)
+                epi = usb.util.find_descriptor(intf, custom_match = lambda e: usb.util.endpoint_direction(e.bEndpointAddress) == usb.util.ENDPOINT_IN )
+                d.outAddress = epo.bEndpointAddress
+                d.inAddress = epi.bEndpointAddress
+                logging.info("Device on Bus %d Address %d Port Number %d uses Addresses %d/%d for in/out" % (d.bus,d.address,d.port_number,d.inAddress,d.outAddress))
+                
                 self.setTime(d)
             except Exception as e:
                 logging.error("Error initializing device at Bus %d Address %d Port Number %d. Removing device" % (d.bus,d.address,d.port_number))
@@ -135,8 +152,8 @@ class TLX00(object):
             self.requestBuffer[i+1]=tb[i]
         # send data
         try:
-            device.write(0x1,self.requestBuffer,1000)
-            device.read(0x81,64,1000)
+            device.write(device.outAddress,self.requestBuffer,1000)
+            device.read(device.inAddress,64,1000)
             device.lastTimeSync=int(time.time())
         except Exception as e:
             logging.error("Error setting time: %s",e)
@@ -207,9 +224,9 @@ class TLX00(object):
                     try:
                         logging.debug("write and read data from device")
 
-                        dev.write(0x1, self.requestBuffer,1000)
+                        dev.write(dev.outAddress, self.requestBuffer,1000)
                         time.sleep(0.01)
-                        rawdata=dev.read(0x81,64,1000)
+                        rawdata=dev.read(dev.inAddress,64,1000)
                         if rawdata[0]==0 and rawdata[1]==0:
                             # no new data
                             break
@@ -224,12 +241,17 @@ class TLX00(object):
                         logging.info("Unable to read new data: %s" % e)
                         dev.deviceErrors += 1
                         if dev.deviceErrors > 10 :
-                            logging.warn("Too many errors. Resetting device on Bus %d Address %d Port Number %d" % (dev.bus,dev.address,dev.port_number))
-                            dev.reset()
+                            logging.warn("Too many errors. Removing device on Bus %d Address %d Port Number %d" % (dev.bus,dev.address,dev.port_number))
+                            self.devices.remove(dev) # untested!
                         break
             # do not busy poll. Sleep one second
             logging.debug("sleeping")
-            time.sleep(4)        
+            time.sleep(4)
+            if math.floor(time.time()) > self.lastDeviceCheck + 300:
+                logging.debug("Checking for new Devices")
+                if self.checkForNewDevices() :
+                    self.findDevices()
+                    self.initializeDevices()   
                 
                 
             
