@@ -10,10 +10,12 @@ DataListener get all values from the Sensor instances through the Logger. The ca
 serve them on a tcp socket, put them in a database (not implemented) ....
 '''
 
+import time
 import logging
 import socketserver
-import socket
 import threading
+import paho.mqtt.client as mqtt
+
 
 class DataListener(object):
 
@@ -113,7 +115,73 @@ class RecentValuesListener(DataListener):
         if not self.ready:
             self.openListeningPort()
             
+class MQTTListener(DataListener):
+    '''
+    Listener that sends values to a MQTT Broker
+    Data are formatted following the mqtt homie convention:
+    https://homieiot.github.io/
+    https://homieiot.github.io/specification/
+    '''
+    def __init__(self,params):
+        super().__init__(params)
+        self.mqttClient = mqtt.Client()
+        self.values={}
+        self.ready=False
+        self.lastMQTTMessageTime=0
+        self.connect()
+    
+    def on_connect(self,client,userdata,flags,rc):
+        logging.info("Connected to mqtt broker with result code %d",rc)
+        # Subscribe to anything? Not at the moment.
         
+    def on_message(self,client,userdata,msg):
+        logging.debug("Got message from mqtt broker: %s / %s",(msg.topic,msg.payload))
+    
+    def connect(self):
+        
+        try:
+            host=self.params.get('host','localhost')
+            port=self.params.get('port',1883)
+            logging.info("Connecting to mqtt broker at %s:%s"%(host,port))
+            self.mqttClient.on_connect = self.on_connect;
+            self.mqttClient.on_message = self.on_message;
+            
+            self.mqttClient.connect(host, port)
+            self.mqttClient.loop_start()
+            self.ready=True
+        except Exception as e:
+            logging.error("Unable to communicate with mqtt broker: %s",e)
+        
+    def onNewData(self,data):
+        self.values[data['sensorid']] = data
+        if self.ready and time.time() > self.lastMQTTMessageTime + 4 : # send only every 4 seconds
+            try:
+                topicroot = '%s/%s' % (self.params.get('mqtt_base_topic','homie'),self.params.get('mqtt_device','pylarexx'))
+                
+                logging.debug("publishing MQTT messages with topic root %s" % topicroot )
+                self.mqttClient.publish('%s/$homie' % topicroot, self.params.get('homie_convention_version','3.0'))
+                self.mqttClient.publish('%s/$name' % topicroot, self.params.get('mqtt_device_name','Python MQTT Adapter for Arexx Multilogger'))
+                nodes=[]
+                for sid,value in self.values.items():
+                    nodes.append('sensor_%d' % sid)
+                nodestring=','.join(nodes)            
+                self.mqttClient.publish('%s/$nodes'% topicroot, nodestring) # does this work?
+                self.mqttClient.publish('%s/$state' % topicroot,"ready")
+                
+                for sid,value in self.values.items():
+                    self.mqttClient.publish('%s/sensor_%d/$type' % (topicroot,sid), value['sensor'].manufacturerType)
+                    self.mqttClient.publish('%s/sensor_%d/$name' % (topicroot,sid), value['sensor'].name)
+                    self.mqttClient.publish('%s/sensor_%d/$properties' % (topicroot,sid), value['sensor'].type.lower())
+                    self.mqttClient.publish('%s/sensor_%d/%s/$name' % (topicroot,sid,value['sensor'].type.lower()), '%s %s' % (value['sensor'].name, value['sensor'].type))
+                    self.mqttClient.publish('%s/sensor_%d/%s/$datatype' % (topicroot,sid,value['sensor'].type.lower()), 'float')
+                    self.mqttClient.publish('%s/sensor_%d/%s/$unit' % (topicroot,sid,value['sensor'].type.lower()), value['sensor'].unit)
+                    self.mqttClient.publish('%s/sensor_%d/%s' % (topicroot,sid,value['sensor'].type.lower()), '%.2f' % value['sensor'].rawToCooked(value['rawvalue']))
+                   
+            except Exception as e:
+                logging.error("Error publishing mqtt messages: %s",e)
+                    
+
+
         
         
         

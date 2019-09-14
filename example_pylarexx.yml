@@ -25,6 +25,14 @@ output:
       params:
           host: 0.0.0.0
           port: 3333
+    - type: MQTTListener
+      params:
+          host: localhost
+          port: 1883
+          mqtt_base_topic: homie
+          homie_convention_version: 3.0
+          mqtt_device: pylarexx
+          mqtt_device_name: Python MQTT Adapter for Arexx Multilogger
 config:
     DetectUnknownSensors: yes
 
