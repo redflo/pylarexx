@@ -39,6 +39,10 @@ At *output* you can add one or more DataListeners and configure them. You can al
 - RecentValuesListener: Makes recent values of all sensors available to a TCP socket. This can be queried with "nc". Useful for example, if you want to monitor sensor values with nagios/icinga/check_mk
     * Parameter: *host* IP to listen, default value: localhost
     * Parameter: *port* TCP Port, default value: 4711
+- MQTTListener: Sends data to a mqtt Server. Data are sent in [mqtt homie convention format](https://homieiot.github.io/specification/). This makes integration in OpenHAB2 very easy. Sensors can be autodiscovered through OpenHAB2s MQTT Binding.
+    * Parameter: *host* IP or name of mqtt server
+    * Parameter: *port* TCP Port, default value: 1883
+    * Parameter: *mqtt_base_topic* default value "homie"
     
 Planned:
 - Log to Grafana
