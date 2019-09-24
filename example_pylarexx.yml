@@ -29,8 +29,17 @@ output:
       params:
           host: localhost
           port: 1883
+          payload_format: homie
           mqtt_base_topic: homie
           homie_convention_version: 3.0
+          mqtt_device: pylarexx
+          mqtt_device_name: Python MQTT Adapter for Arexx Multilogger
+    - type: MQTTListener
+      params:
+          host: localhost
+          port: 1883
+          payload_format: home-assistant
+          mqtt_base_topic: homeassistant
           mqtt_device: pylarexx
           mqtt_device_name: Python MQTT Adapter for Arexx Multilogger
 config:

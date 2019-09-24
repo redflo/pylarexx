@@ -34,15 +34,19 @@ At *output* you can add one or more DataListeners and configure them. You can al
 #### Available output modules (DataListeners):
 
 - LoggingListener: Uses python logging to print measured values
+
 - FileOutListener: Appends measured values to a file
     * Parameter: *filename* default value: /tmp/pylarexx.out
+    
 - RecentValuesListener: Makes recent values of all sensors available to a TCP socket. This can be queried with "nc". Useful for example, if you want to monitor sensor values with nagios/icinga/check_mk
     * Parameter: *host* IP to listen, default value: localhost
     * Parameter: *port* TCP Port, default value: 4711
-- MQTTListener: Sends data to a mqtt Server. Data are sent in [mqtt homie convention format](https://homieiot.github.io/specification/). This makes integration in OpenHAB2 very easy. Sensors can be autodiscovered through OpenHAB2s MQTT Binding.
+    
+- MQTTListener: Sends data to a mqtt Server. Data are sent in [mqtt homie convention format](https://homieiot.github.io/specification/) or [Home Assistant auto discovery format](https://www.home-assistant.io/docs/mqtt/discovery/). This makes integration in OpenHAB2, Home Assistant or other very easy. Sensors can be autodiscovered through OpenHAB2s/Home Assistants MQTT Binding.
     * Parameter: *host* IP or name of mqtt server
     * Parameter: *port* TCP Port, default value: 1883
-    * Parameter: *mqtt_base_topic* default value "homie"
+    * Parameter: *mqtt_base_topic* default value "homie" or homeassistant
+    * Parameter: *payload_format* "homie" oder "home-assistant". Which format to send
     
 Planned:
 - Log to Grafana
@@ -52,7 +56,7 @@ Planned:
 - Log to a REST API
 - ....
 
-Look at DataListener.py to see how to implement new output modules
+Look at DataListener.py to see how to implement new output modules. Look at example_pylarexx.yml for configuration examples.
 
 ### Other config
 

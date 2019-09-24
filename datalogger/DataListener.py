@@ -15,6 +15,7 @@ import logging
 import socketserver
 import threading
 import paho.mqtt.client as mqtt
+import json
 
 
 class DataListener(object):
@@ -121,13 +122,17 @@ class MQTTListener(DataListener):
     Data are formatted following the mqtt homie convention:
     https://homieiot.github.io/
     https://homieiot.github.io/specification/
+    
+    and/or the home assistant mqtt auto discovery format
+    
+    https://www.home-assistant.io/docs/mqtt/discovery/
+    
     '''
     def __init__(self,params):
         super().__init__(params)
         self.mqttClient = mqtt.Client()
         self.values={}
         self.ready=False
-        self.lastMQTTMessageTime=0
         self.connect()
     
     def on_connect(self,client,userdata,flags,rc):
@@ -153,34 +158,91 @@ class MQTTListener(DataListener):
             logging.error("Unable to communicate with mqtt broker: %s",e)
         
     def onNewData(self,data):
+        payloadFormat = self.params.get('payload_format','home-assistant')
+        if payloadFormat == 'homie':
+            self.sendHomieMessages(data)
+        if payloadFormat == 'home-assistant':
+            self.sendHomeAssistantMessage(data)
+                     
+    def sendHomeAssistantMessage(self,data):
+        try:
+            newSensor = False
+            self.values[data['sensorid']]
+        except Exception as e:
+            newSensor = True
+        if self.ready:
+            try:
+                topicroot = '%s/%s' % (self.params.get('mqtt_base_topic','homeassistant'),'sensor')
+                topicconfig='%s/%s_%s/config' % (topicroot,self.params.get('mqtt_device','pylarexx'),data['sensorid'])
+                topicstate='%s/%s_%s/state' % (topicroot,self.params.get('mqtt_device','pylarexx'),data['sensorid'])
+                
+                if newSensor:
+                    logging.debug('New Sensor config')
+                    unit_of_measurement = data['sensor'].unit
+                    if unit_of_measurement == '%RH':
+                        unit_of_measurement = '%'
+                    
+                    payload={'name': '%s %s' % (data['sensor'].name, data['sensor'].type),
+                             'device_class': data['sensor'].type.lower(),
+                             'state_topic': topicstate,
+                             'unit_of_measurement': unit_of_measurement,
+                             'value_template': '{{value_json.%s}}' % data['sensor'].type.lower(),
+                             }
+                    self.mqttClient.publish(topicconfig, json.dumps(payload), 0, True)
+                statePayload={}
+                statePayload[data['sensor'].type.lower()] = '%.2f' % data['sensor'].rawToCooked(data['rawvalue'])
+                self.mqttClient.publish(topicstate, json.dumps(statePayload))
+                
+            except Exception as e:
+                logging.error("Error publishing mqtt messages: %s",e)
+
+        
+
+
+    def sendHomieMessages(self,data):
+        try:
+            newSensor = False
+            self.values[data['sensorid']]
+        except Exception as e:
+            newSensor = True
         self.values[data['sensorid']] = data
-        if self.ready and time.time() > self.lastMQTTMessageTime + 4 : # send only every 4 seconds
+        if self.ready:
             try:
                 topicroot = '%s/%s' % (self.params.get('mqtt_base_topic','homie'),self.params.get('mqtt_device','pylarexx'))
                 
                 logging.debug("publishing MQTT messages with topic root %s" % topicroot )
-                self.mqttClient.publish('%s/$homie' % topicroot, self.params.get('homie_convention_version','3.0'))
-                self.mqttClient.publish('%s/$name' % topicroot, self.params.get('mqtt_device_name','Python MQTT Adapter for Arexx Multilogger'))
-                nodes=[]
-                for sid,value in self.values.items():
-                    nodes.append('sensor_%d' % sid)
-                nodestring=','.join(nodes)            
-                self.mqttClient.publish('%s/$nodes'% topicroot, nodestring) # does this work?
-                self.mqttClient.publish('%s/$state' % topicroot,"ready")
-                
-                for sid,value in self.values.items():
-                    self.mqttClient.publish('%s/sensor_%d/$type' % (topicroot,sid), value['sensor'].manufacturerType)
-                    self.mqttClient.publish('%s/sensor_%d/$name' % (topicroot,sid), value['sensor'].name)
-                    self.mqttClient.publish('%s/sensor_%d/$properties' % (topicroot,sid), value['sensor'].type.lower())
-                    self.mqttClient.publish('%s/sensor_%d/%s/$name' % (topicroot,sid,value['sensor'].type.lower()), '%s %s' % (value['sensor'].name, value['sensor'].type))
-                    self.mqttClient.publish('%s/sensor_%d/%s/$datatype' % (topicroot,sid,value['sensor'].type.lower()), 'float')
-                    self.mqttClient.publish('%s/sensor_%d/%s/$unit' % (topicroot,sid,value['sensor'].type.lower()), value['sensor'].unit)
-                    self.mqttClient.publish('%s/sensor_%d/%s' % (topicroot,sid,value['sensor'].type.lower()), '%.2f' % value['sensor'].rawToCooked(value['rawvalue']))
-                   
+                if newSensor:
+                    logging.debug("Updating MQTT device")
+                    self.mqttClient.publish('%s/$homie' % topicroot, self.params.get('homie_convention_version','3.0'),0,True)
+                    self.mqttClient.publish('%s/$name' % topicroot, self.params.get('mqtt_device_name','Python MQTT Adapter for Arexx Multilogger'),0,True)
+                    nodes=[]
+                    for sid,value in self.values.items():
+                        nodes.append('sensor_%d' % sid)
+                    nodestring=','.join(nodes)            
+                    self.mqttClient.publish('%s/$nodes'% topicroot, nodestring,0,True) # does this work?
+                    self.mqttClient.publish('%s/$state' % topicroot,"ready",0,True)
+                    
+                    for sid,value in self.values.items():
+                        logging.debug("Sending MQTT sensor values")
+                        self.mqttClient.publish('%s/sensor_%d/$type' % (topicroot,sid), value['sensor'].manufacturerType)
+                        self.mqttClient.publish('%s/sensor_%d/$name' % (topicroot,sid), value['sensor'].name)
+                        self.mqttClient.publish('%s/sensor_%d/$properties' % (topicroot,sid), value['sensor'].type.lower())
+                        self.mqttClient.publish('%s/sensor_%d/%s/$name' % (topicroot,sid,value['sensor'].type.lower()), '%s %s' % (value['sensor'].name, value['sensor'].type))
+                        self.mqttClient.publish('%s/sensor_%d/%s/$datatype' % (topicroot,sid,value['sensor'].type.lower()), 'float')
+                        self.mqttClient.publish('%s/sensor_%d/%s/$unit' % (topicroot,sid,value['sensor'].type.lower()), value['sensor'].unit)
+                        self.mqttClient.publish('%s/sensor_%d/%s' % (topicroot,sid,value['sensor'].type.lower()), '%.2f' % value['sensor'].rawToCooked(value['rawvalue']))
+                else:
+                    logging.debug("Sending MQTT sensor values")
+                    sid=data['sensorid']
+                    self.mqttClient.publish('%s/sensor_%d/$type' % (topicroot,sid), data['sensor'].manufacturerType)
+                    self.mqttClient.publish('%s/sensor_%d/$name' % (topicroot,sid), data['sensor'].name)
+                    self.mqttClient.publish('%s/sensor_%d/$properties' % (topicroot,sid), data['sensor'].type.lower())
+                    self.mqttClient.publish('%s/sensor_%d/%s/$name' % (topicroot,sid,data['sensor'].type.lower()), '%s %s' % (data['sensor'].name, data['sensor'].type))
+                    self.mqttClient.publish('%s/sensor_%d/%s/$datatype' % (topicroot,sid,data['sensor'].type.lower()), 'float')
+                    self.mqttClient.publish('%s/sensor_%d/%s/$unit' % (topicroot,sid,data['sensor'].type.lower()), data['sensor'].unit)
+                    self.mqttClient.publish('%s/sensor_%d/%s' % (topicroot,sid,data['sensor'].type.lower()), '%.2f' % data['sensor'].rawToCooked(data['rawvalue']))  
             except Exception as e:
                 logging.error("Error publishing mqtt messages: %s",e)
-                    
-
 
         
         
