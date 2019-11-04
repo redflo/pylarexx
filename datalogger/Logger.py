@@ -135,8 +135,12 @@ class TLX00(object):
                 
                 self.setTime(d)
             except Exception as e:
-                logging.error("Error initializing device at Bus %d Address %d Port Number %d. Removing device" % (d.bus,d.address,d.port_number))
+                logging.error("Error initializing device at Bus %d Address %d Port Number %d. Resetting and removing device" % (d.bus,d.address,d.port_number))
                 logging.error("Error Message: %s" % e)
+                try:
+                    d.reset()
+                except Exception as ne:
+                    logging.error("Error resetting device: %s" % ne)
                 self.devices.remove(d)
       
     def setTime(self,device):
@@ -247,7 +251,7 @@ class TLX00(object):
             # do not busy poll. Sleep one second
             logging.debug("sleeping")
             time.sleep(4)
-            if math.floor(time.time()) > self.lastDeviceCheck + 300:
+            if math.floor(time.time()) > self.lastDeviceCheck + 60:
                 logging.debug("Checking for new Devices")
                 if self.checkForNewDevices() :
                     self.findDevices()
