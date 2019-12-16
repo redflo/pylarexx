@@ -108,6 +108,8 @@ class TLX00(object):
             for d in self.devices:
                 d.lastTimeDataRead = 0
                 d.deviceErrors = 0
+                d.lastTimeSync = 0
+                d.lastTimeDelete = 0
                 logging.info("Bus %d Address %d Port Number %d " % (d.bus,d.address,d.port_number))
             return True
         logging.error("No device found")
@@ -162,6 +164,19 @@ class TLX00(object):
         except Exception as e:
             logging.error("Error setting time: %s",e)
     
+    def deleteDeviceData(self,device):
+        logging.debug("deleting internal Flash data of USB device at Bus %d Address %d Port Number %d" % (device.bus,device.address,device.port_number))
+        # set mode
+        self.clearRequestBuffer()
+        self.requestBuffer[0]=0x0d
+        try:
+            device.write(device.outAddress,self.requestBuffer,1000)
+            device.read(device.inAddress,64,1000)
+            device.lastTimeDelete=int(time.time())
+        except Exception as e:
+            logging.error("Error deleting flash: %s",e)
+
+
     def registerDataListener(self, dataListener):
         if isinstance(dataListener,DataListener):
             logging.debug("Registering DataListener %s",type(dataListener).__name__)
@@ -221,6 +236,10 @@ class TLX00(object):
                 # do time sync every 900 sec
                 if int(time.time()) - dev.lastTimeSync > 900:
                     self.setTime(dev)
+                    
+                # delete internal flash every day # todo: make interval configurable or count entries
+                if int(time.time()) - dev.lastTimeDelete > 86400:
+                    self.deleteDeviceData(dev)
                 
                 while True:
                     self.clearRequestBuffer()
