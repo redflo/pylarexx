@@ -126,6 +126,13 @@ class ArexxTemperatureSensor(ArexxSensor):
             return -39.6 +c0 + raw*(0.01+c1)
         if self.manufacturerType=='TL-3TSN':
             return c0+raw*(0.0078125+c1)
+        # fallback default
+        logging.info("Set Temperature Sensor Type in config for exact values: Sensor %s" % self.id)
+        t = -39.6 +c0 + raw*(0.01+c1)
+        if t > -20 and t < 50:
+            return t
+        else:
+            return c0+raw*(0.0078125+c1)
     
         
 class ArexxHumiditySensor(ArexxSensor):

@@ -15,7 +15,7 @@ import datalogger.DataListener
 from datalogger.DataListener import DataListener
 import logging
 import yaml
-
+# import traceback
 
 
 class TLX00(object):
@@ -262,6 +262,7 @@ class TLX00(object):
                         dev.deviceErrors = 0
                     except Exception as e:
                         logging.info("Unable to read new data: %s" % e)
+                        # logging.debug(traceback.format_exc())
                         dev.deviceErrors += 1
                         if dev.deviceErrors > 10 :
                             logging.warn("Too many errors. Removing device on Bus %d Address %d Port Number %d" % (dev.bus,dev.address,dev.port_number))
