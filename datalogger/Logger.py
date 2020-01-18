@@ -98,20 +98,21 @@ class TLX00(object):
             logging.info("Adding guessed Humidity Sensor")
             self.sensors[sensorid] = datalogger.Sensor.ArexxHumiditySensor(sensorid,sensortype,name)
             
- # Method to clear the buffer on the device
+ # Method to reset the requestBuffer to 0 to have a clean starting buffer
     
     def clearRequestBuffer(self):
         # no more than 5 bytes are written to the buffer
         for i in range(0,5):
             self.requestBuffer[i]=0
             
- # this methd
+ # this method looks for logger attached via USB on the system 
+
     def findDevices(self):
         self.lastDeviceCheck = math.floor(time.time())
         founddevices = usb.core.find(find_all= True, idVendor=0x0451, idProduct=0x3211)
         self.devices = list(founddevices)
         if self.devices is not None:
-            logging.info("Found TL300/500 device(s) at ")
+            logging.info("Found TL300/500 BS-510 device(s) at ")
             for d in self.devices:
                 d.lastTimeDataRead = 0
                 d.deviceErrors = 0
@@ -151,7 +152,9 @@ class TLX00(object):
                 except Exception as ne:
                     logging.error("Error resetting device: %s" % ne)
                 self.devices.remove(d)
-      
+    
+  # Method to set the time on the logging device   
+    
     def setTime(self,device):
         logging.debug("Setting time for USB device at Bus %d Address %d Port Number %d" % (device.bus,device.address,device.port_number))
         # set mode
@@ -172,7 +175,9 @@ class TLX00(object):
             device.lastTimeSync=int(time.time())  # set the actuel time since when the last sync has been performed
         except Exception as e:
             logging.error("Error setting time: %s",e)
-    
+
+   # Mehtod will delete the internal flash data of the Logger. this done by preparing the buffer and send it to the logger
+        
     def deleteDeviceData(self,device):
         logging.debug("deleting internal Flash data of USB device at Bus %d Address %d Port Number %d" % (device.bus,device.address,device.port_number))
         # set mode
@@ -196,7 +201,10 @@ class TLX00(object):
             self.listeners.remove(dataListener)
         except:
             logging.debug("Unable to deregister DataListener");
-     
+            
+# Method checks for the length of device.read(device.inAddress,64,1000). If the length is 10-byte it only containts
+# the signal strength. If the length is 9-byte it containts Sensor ID, the raw value and the timestamp. (see Protocol.txt)
+
     def parseData(self,data):
         '''
         checks if raw data are valid and extracts sensor id, raw value, timestamp and if present signal strength
@@ -231,7 +239,15 @@ class TLX00(object):
                 continue
             # logging.debug("Parser: Nothing found at pos %d"%pos)
         return datapoints
-        
+
+    
+# Methode to extract the data. It starts by first if any listeners are currently up. 
+# Then checks when was the last time the time has been set on the Logger.
+# It also resets the internal flash every day.
+# It prepares the needed buffer message in this case starts the buffer with type-03 (see Protokol.txt). This will trigger
+# the logger to request the data from the sensors. 
+# The data are then ask back with by reading the Logger buffer rawdata=dev.read(dev.inAddress,64,1000)
+
     def loop(self):
         '''
         constantly reads data from TL-X00 devices as long as DataListeners are registered.
@@ -256,18 +272,18 @@ class TLX00(object):
                     try:
                         logging.debug("write and read data from device")
 
-                        dev.write(dev.outAddress, self.requestBuffer,1000)
+                        dev.write(dev.outAddress, self.requestBuffer,1000) # send request to read the sensors
                         time.sleep(0.01)
-                        rawdata=dev.read(dev.inAddress,64,1000)
-                        if rawdata[0]==0 and rawdata[1]==0:
+                        rawdata=dev.read(dev.inAddress,64,1000) # request the result from logger
+                        if rawdata[0]==0 and rawdata[1]==0: 
                             # no new data
                             break
-                        dev.lastTimeDataRead = int(time.time())
-                        datapoints = self.parseData(rawdata)
+                        dev.lastTimeDataRead = int(time.time()) # store new time of new retrived data
+                        datapoints = self.parseData(rawdata) # method to get process buffer data into usable data  
                         # notify listeners
                         for datapoint in datapoints:
                             for l in self.listeners:
-                                l.onNewData(datapoint)
+                                l.onNewData(datapoint) # invoke mehtod to share new data to the listernersmath.floor(time.time())math.floor(time.time())
                         dev.deviceErrors = 0
                     except Exception as e:
                         logging.info("Unable to read new data: %s" % e)
