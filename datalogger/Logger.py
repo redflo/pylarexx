@@ -20,7 +20,7 @@ import yaml
 
 class TLX00(object):
     '''
-    This class handles USB connection and communication for Arexx TL-300 and TL-500 devices
+    This class handles USB connection and communication for Arexx TL-300 and TL-500 devices and BS-510
     '''
     TIME_OFFSET = 946681200           # Timestamp of 2000-01-01 00:00:00
 
@@ -34,7 +34,9 @@ class TLX00(object):
         self.lastDeviceCheck=0
         if 'conffile' in params:
             self.readConfigFile(params['conffile'])
-    
+
+## This method extract the information stored in the config file /etc/pylarexx.yml with the differnt config sections ##
+            
     def readConfigFile(self,filename):
         with open(filename) as f:
             content=f.read()
@@ -85,7 +87,9 @@ class TLX00(object):
         if 'config' in self.config:
             if 'DetectUnknownSensors' in self.config['config']:
                 self.detectUnknownSensors=bool(self.config['config']['DetectUnknownSensors'])
-    
+ 
+
+
     def addSensor(self,sensorid,name='Unknown',sensortype='Unknown'):
         if sensorid%2 == 0:
             logging.info("Adding guessed Temperature Sensor")
@@ -93,12 +97,15 @@ class TLX00(object):
         if sensorid%2 == 1:
             logging.info("Adding guessed Humidity Sensor")
             self.sensors[sensorid] = datalogger.Sensor.ArexxHumiditySensor(sensorid,sensortype,name)
+            
+ # Method to clear the buffer on the device
     
     def clearRequestBuffer(self):
         # no more than 5 bytes are written to the buffer
         for i in range(0,5):
             self.requestBuffer[i]=0
-               
+            
+ # this methd
     def findDevices(self):
         self.lastDeviceCheck = math.floor(time.time())
         founddevices = usb.core.find(find_all= True, idVendor=0x0451, idProduct=0x3211)
@@ -149,18 +156,20 @@ class TLX00(object):
         logging.debug("Setting time for USB device at Bus %d Address %d Port Number %d" % (device.bus,device.address,device.port_number))
         # set mode
         self.clearRequestBuffer()
-        self.requestBuffer[0]=4
+        self.requestBuffer[0]=4 # Protocol.txt says with type 04 the time can be set on the device
         # put time in array
-        t=math.floor(time.time())-self.TIME_OFFSET
+        t=math.floor(time.time())-self.TIME_OFFSET 
         tb=t.to_bytes(4,byteorder='little')
         
         for i in range(0,4):
             self.requestBuffer[i+1]=tb[i]
+        # The created buffer will tell the BS-XX0 to ge ready for a time setting. 
+        # the buffer containts the type 4 message and the datetime in u32le format 
         # send data
         try:
-            device.write(device.outAddress,self.requestBuffer,1000)
-            device.read(device.inAddress,64,1000)
-            device.lastTimeSync=int(time.time())
+            device.write(device.outAddress,self.requestBuffer,1000) # write to device at defined addres, write the buffer with time data ,timeout is 1000s
+            device.read(device.inAddress,64,1000) # read at device address,get the 64 byte long message, timeout is 1000s
+            device.lastTimeSync=int(time.time())  # set the actuel time since when the last sync has been performed
         except Exception as e:
             logging.error("Error setting time: %s",e)
     
@@ -168,7 +177,7 @@ class TLX00(object):
         logging.debug("deleting internal Flash data of USB device at Bus %d Address %d Port Number %d" % (device.bus,device.address,device.port_number))
         # set mode
         self.clearRequestBuffer()
-        self.requestBuffer[0]=0x0d
+        self.requestBuffer[0]=0x0d # this mode will delete the flash memory of the device 
         try:
             device.write(device.outAddress,self.requestBuffer,1000)
             device.read(device.inAddress,64,1000)
@@ -176,7 +185,7 @@ class TLX00(object):
         except Exception as e:
             logging.error("Error deleting flash: %s",e)
 
-
+            
     def registerDataListener(self, dataListener):
         if isinstance(dataListener,DataListener):
             logging.debug("Registering DataListener %s",type(dataListener).__name__)
