@@ -1,3 +1,16 @@
+    - type: InfluxDBListener
+      params:
+          host: 127.0.0.1
+          port: 8086
+          user: pi
+          password: arexx1#
+          dbname: arexx
+    - type: Sqlite3Listener
+      params:
+          filename: /tmp/arexx.db
+    - type: FileOutListener
+      params:
+          filename: /tmp/arexx.out
 sensors:
     - id: 17208
       name: Living room
