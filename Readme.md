@@ -5,12 +5,32 @@ Pylarexx searches the USB bus for [Arexx](http://www.arexx.com/templogger/html/e
 At the moment the BS-510 / TL-510 devices are experimental supported, since i have no such device. New Arexx sensors have id values that exceed 2 bytes and need this newer device. Would be nice, if someone sends me a device or a patch.
 
 The sensors that i have tested are TSN-TH70E and TL-3TSN, both with 2-byte id numbers (<65536). If you have other sensors (CO2, ...), you can send me sensors or debugging output, and i will try to add them.
-
+`
 The protocol and interpretation of values for supported devices is explained in Protocol.txt and sensors.txt
   
 ## Installation
 
-Pylarexx is tested with Linux. Installing and running pylarexx requires root privileges. 
+Pylarexx is tested with Linux. Installing and ~~running~~ pylarexx requires root privileges.
+
+## configuration to run script without root privileges 
+
+- go to the Arexx [webpage](http://www.arexx.com/templogger/html/de/software.php) and download the rf_usb_http_rpi_ 0_6 script for raspberry pi
+- Extract the files
+
+- Copy 51-rf_usb.rules to `/lib/udev/rules.d/`
+- Open 51-rf_usb.rules and add the following `ROUP="Plugdev"` to the end of the file. it should look lik this:
+`SUBSYSTEM=="usb", ATTRS{idVendor}=="0451", ATTRS{idProduct}=="3211", MODE="0666", GROUP="Plugdev"`
+
+- add/ensure that "user" or here user "pi" is part of that group `plugdev`
+`adduser username plugdev`
+
+- force udev to restart
+`sudo udevadm control --reload`
+`sudo udevadm trigger`
+- Finaly unplug and plug back the device
+
+
+
 The install.sh should put the code to /usr/local/pylarexx, a example config to /etc/pylarexx.yml and on systemd based systems, it creates a service.
 
 ## Configuration
