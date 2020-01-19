@@ -86,7 +86,7 @@ class Sqlite3Listener(DataListener):
         curs = conn.cursor()
 
         sqlTable = '''CREATE TABLE IF NOT EXISTS pylarexx (id INTEGER PRIMARY KEY, timestamp long, Location string, sensorid integer, SensorType string, SensorValue float, Unit string);'''
-        sqlValues ='''INSERT INTO pylarrex (timestamp, Location, sensorid, SensorType, SensorValue, Unit) VALUES (?,?,?,?,?,?);'''
+        sqlValues ='''INSERT INTO pylarexx (timestamp, Location, sensorid, SensorType, SensorValue, Unit) VALUES (?,?,?,?,?,?);'''
 
         data_tuple = (data['timestamp'], data['sensor'].name, data['sensorid'],data['sensor'].type,data['sensor'].rawToCooked(data['rawvalue']),data['sensor'].unit)
 
