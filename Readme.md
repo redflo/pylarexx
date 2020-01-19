@@ -1,4 +1,4 @@
-# Pylarexx - Python DataLogger for Arexx Multilogger Devices
+Log to mysql/postgres# Pylarexx - Python DataLogger for Arexx Multilogger Devices
 
 Pylarexx searches the USB bus for [Arexx](http://www.arexx.com/templogger/html/en/index.php) BS-500 / BS-510 / TL-500 / TL-510 devices, and constantly reads sensor data. It can be configured to name the sensors, add calibration values and configure output modules.
 
@@ -55,6 +55,16 @@ At *output* you can add one or more DataListeners and configure them. You can al
 
 - LoggingListener: Uses python logging to print measured values
 
+- InfluxDBListener: Push data to pre-configured influxDB which then can be used for Grafana 
+    * parameter: *host*: 127.0.0.1 default value: 127.0.0.1
+    * parameter: *port*: 8086
+    * parameter: *user*: pi 
+    * parameter: *password*: XXXXX
+    * parameter: *dbname*: arexx default value: arexx
+    
+ - Sqlite3Listener
+    * parameter: *filename*: /tmp/arexx.db
+    
 - FileOutListener: Appends measured values to a file
     * Parameter: *filename* default value: /tmp/pylarexx.out
     
@@ -67,12 +77,14 @@ At *output* you can add one or more DataListeners and configure them. You can al
     * Parameter: *port* TCP Port, default value: 1883
     * Parameter: *mqtt_base_topic* default value "homie" or homeassistant
     * Parameter: *payload_format* "homie" oder "home-assistant". Which format to send
-    
+
+
+
 Planned:
-- Log to Grafana
+- ~~Log to Grafana~~
 - Log to Elasticsearch/Solr
-- Log to mysql/postgres
-- Log to influxdb
+- ~~Log to mysql/postgres~~
+- ~~Log to influxdb~~
 - Log to a REST API
 - ....
 
