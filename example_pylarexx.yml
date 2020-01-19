@@ -18,6 +18,19 @@ calibration:
           1: 0.0
 output:
     - type: LoggingListener
+    - type: InfluxDBListener
+      params:
+          host: 127.0.0.1
+          port: 8086
+          user: pi
+          password: XXXX
+          dbname: arexx
+    - type: Sqlite3Listener
+      params:
+          filename: /tmp/arexx.db
+    - type: FileOutListener
+      params:
+          filename: /tmp/arexx.out
     - type: FileOutListener
       params:
           filename: /tmp/arexx.out
