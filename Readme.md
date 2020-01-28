@@ -18,7 +18,7 @@ Pylarexx is tested with Linux. Installing and ~~running~~ pylarexx requires root
 - Extract the files
 
 - Copy 51-rf_usb.rules to `/lib/udev/rules.d/`
-- Open 51-rf_usb.rules and add the following `ROUP="Plugdev"` to the end of the file. it should look lik this:
+- Open 51-rf_usb.rules and add the following `GROUP="Plugdev"` to the end of the file. it should look lik this:
 `SUBSYSTEM=="usb", ATTRS{idVendor}=="0451", ATTRS{idProduct}=="3211", MODE="0666", GROUP="Plugdev"`
 
 - add/ensure that "user" or here user "pi" is part of that group `plugdev`
