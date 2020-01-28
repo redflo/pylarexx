@@ -241,12 +241,13 @@ class TLX00(object):
                 if int(time.time()) - dev.lastTimeDelete > 86400:
                     self.deleteDeviceData(dev)
                 
-                while True:
-                    self.clearRequestBuffer()
-                    self.requestBuffer[0]=3   
+                readcount=0
+                founddata=0
+                while True:    
                     try:
                         logging.debug("write and read data from device")
-
+                        self.clearRequestBuffer()
+                        self.requestBuffer[0]=3
                         dev.write(dev.outAddress, self.requestBuffer,1000)
                         time.sleep(0.01)
                         rawdata=dev.read(dev.inAddress,64,1000)
@@ -259,7 +260,14 @@ class TLX00(object):
                         for datapoint in datapoints:
                             for l in self.listeners:
                                 l.onNewData(datapoint)
-                        dev.deviceErrors = 0
+                        founddata += len(datapoints)
+                        readcount += 1
+                        if founddata == 0 and readcount > 5:
+                            raise Exception('device gives nonsense data')
+                        elif founddata > 0:
+                            dev.deviceErrors = 0
+                        # sleep again before polling device
+                        time.sleep(0.01)
                     except Exception as e:
                         logging.info("Unable to read new data: %s" % e)
                         # logging.debug(traceback.format_exc())
