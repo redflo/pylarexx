@@ -96,6 +96,9 @@ At *config* there are some other configuration options:
 
 * DetectUnknownSensors: Default: yes. If set to "no", pylarexx will only see the configured sensors. Good if you have other types of sensors, that create ghost entries.
 
+### Example with grafana 
+
+![alt text](https://raw.githubusercontent.com/inonoob/pylarexx/master/Screenshot%20from%202020-01-28%2020-29-39.png)
 
 ## License
 
