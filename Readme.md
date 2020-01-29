@@ -1,4 +1,4 @@
-Log to mysql/postgres# Pylarexx - Python DataLogger for Arexx Multilogger Devices
+# Pylarexx - Python DataLogger for Arexx Multilogger Devices
 
 Pylarexx searches the USB bus for [Arexx](http://www.arexx.com/templogger/html/en/index.php) BS-500 / BS-510 / TL-500 / TL-510 devices, and constantly reads sensor data. It can be configured to name the sensors, add calibration values and configure output modules.
 
