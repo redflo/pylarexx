@@ -225,6 +225,7 @@ class TLX00(object):
             if (data[pos] == 9 or data[pos] == 10) and pos < 55:
                 # logging.debug("Parser found start mark")
                 sensorid = int.from_bytes([data[pos+1],data[pos+2]], byteorder = 'little', signed=False)
+
                 rawvalue = int.from_bytes([data[pos+3],data[pos+4]], byteorder = 'big', signed=False)
                 timestamp = int.from_bytes([data[pos+5],data[pos+6],data[pos+7],data[pos+8]], byteorder = 'little', signed=False)
                 signal=None
@@ -237,11 +238,27 @@ class TLX00(object):
                 # logging.info("Found Datapoint from sensor %d with value %d" % (sensorid,rawvalue))
                 pos+=8
                 continue
+            if data[pos] == 12 and pos < 53:
+                sensorid = int.from_bytes([data[pos+1],data[pos+2],data[pos+3],data[pos+4]], byteorder = 'little', signed=False)
+
+                rawvalue = int.from_bytes([data[pos+5],data[pos+6]], byteorder = 'big', signed=False)
+                timestamp = int.from_bytes([data[pos+7],data[pos+8],data[pos+9],data[pos+10]], byteorder = 'little', signed=False)
+                signal=None
+                if data[pos] == 12:
+                    signal = int.from_bytes([data[pos+11]],byteorder = 'little', signed=False)
+                if self.detectUnknownSensors and sensorid not in self.sensors:
+                    self.addSensor(sensorid)
+                    
+                datapoints.append({'sensorid': sensorid, 'rawvalue': rawvalue, 'timestamp': timestamp+self.TIME_OFFSET, 'signal':signal, 'sensor': self.sensors[sensorid]})
+                # logging.info("Found Datapoint from sensor %d with value %d" % (sensorid,rawvalue))
+                pos+=11
+                continue
+                
             # logging.debug("Parser: Nothing found at pos %d"%pos)
         return datapoints
 
     
-# Methode to extract the data. It starts by first if any listeners are currently up. 
+# Method to extract the data. It starts by first if any listeners are currently up. 
 # Then checks when was the last time the time has been set on the Logger.
 # It also resets the internal flash every day.
 # It prepares the needed buffer message in this case starts the buffer with type-03 (see Protokol.txt). This will trigger
