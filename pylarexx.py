@@ -21,9 +21,9 @@ from argparse import RawDescriptionHelpFormatter
 import logging
 
 __all__ = []
-__version__ = 0.3
+__version__ = 0.4
 __date__ = '2017-11-22'
-__updated__ = '2019-09-11'
+__updated__ = '2020-03-14'
 
 DEBUG = 0
 TESTRUN = 0
@@ -84,7 +84,7 @@ USAGE
             verbose=3
 
         logginglevels={0:logging.ERROR, 1:logging.WARN, 2:logging.INFO, 3:logging.DEBUG}
-        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logginglevels[verbose])
+        logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(filename)s:%(lineno)s - %(funcName)s -  %(message)s', level=logginglevels[verbose])
         logging.info("log level %d" % logginglevels[verbose])
 
 

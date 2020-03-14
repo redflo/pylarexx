@@ -15,6 +15,9 @@ import datalogger.DataListener
 from datalogger.DataListener import DataListener
 import logging
 import yaml
+from datalogger.Sensor import ArexxSensorDetector
+from pprint import pformat
+
 # import traceback
 
 
@@ -40,15 +43,19 @@ class TLX00(object):
     def readConfigFile(self,filename):
         with open(filename) as f:
             content=f.read()
-            self.config=yaml.load(content)
+            self.config=yaml.full_load(content)
             logging.debug(self.config)
             
         if 'sensors' in self.config:
             try:
                 for sensor in self.config['sensors']:
                     sensorid=int(sensor['id'])
-                    sensortype=sensor['type']
-                    name=sensor['name']
+                    sensortype=None
+                    if 'type' in sensor:
+                        sensortype=sensor['type']
+                    name = None
+                    if 'name' in sensor:
+                        name=sensor['name']
                     logging.info("Adding Sensor from config file: %d %s %s"%(sensorid,sensortype,name))
                     if sensortype in ('TL-3TSN','TSN-50E','TSN-EXT44','TSN-33MN'):
                         self.sensors[sensorid]=datalogger.Sensor.ArexxTemperatureSensor(sensorid,sensortype,name)
@@ -56,9 +63,10 @@ class TLX00(object):
                         self.sensors[sensorid]=datalogger.Sensor.ArexxTemperatureSensor(sensorid,sensortype,name)
                         self.sensors[sensorid+1]=datalogger.Sensor.ArexxHumiditySensor(sensorid+1,sensortype,name)
                     else:
-                        self.addSensor(sensorid, name, sensortype)
+                        self.addSensor(sensorid,name)
             except Exception as e:
                 logging.error('Error in config section sensors: %s',e)
+                logging.debug('Stacktrace: ',exc_info=True)
 
         if 'calibration' in self.config:
             for c in self.config['calibration']:
@@ -72,6 +80,7 @@ class TLX00(object):
                         logging.debug("Calibration value for sensor %d oder %d value %f"%(sensorid,n,float(v)))
                 except Exception as e:
                     logging.error('Error in config section calibration: %s',e)
+                    logging.debug('Stacktrace: ',exc_info=True)
 
                     
         if 'output' in self.config:
@@ -83,6 +92,7 @@ class TLX00(object):
                     self.registerDataListener(listenerClass(params))
                 except Exception as e:
                     logging.error('Error in config section output: %s',e)
+                    logging.debug('Stacktrace: ',exc_info=True)
                     
         if 'config' in self.config:
             if 'DetectUnknownSensors' in self.config['config']:
@@ -90,22 +100,29 @@ class TLX00(object):
  
 
 
-    def addSensor(self,sensorid,name='Unknown',sensortype='Unknown'):
-        if sensorid%2 == 0:
-            logging.info("Adding guessed Temperature Sensor")
-            self.sensors[sensorid] = datalogger.Sensor.ArexxTemperatureSensor(sensorid,sensortype,name)
-        if sensorid%2 == 1:
-            logging.info("Adding guessed Humidity Sensor")
-            self.sensors[sensorid] = datalogger.Sensor.ArexxHumiditySensor(sensorid,sensortype,name)
+    def addSensor(self,sensorid,name=None):
+        detector= ArexxSensorDetector()
+        detected_sensor= detector.detectDevice(sensorid)
+        if detected_sensor != False:
+            logging.debug(pformat(detected_sensor))
+            if name != None:
+                detected_sensor.setName(name)
+            else:# check if we have a sensor in config with the same display id. Then copy name
+                for sensor in self.sensors.items():
+                    logging.debug(pformat(sensor))
+                    if sensor[1].displayid == detected_sensor.displayid:
+                        detected_sensor.setName(sensor[1].name)
+            self.sensors[sensorid] = detected_sensor
+            return True
+        return False
             
- # Method to reset the requestBuffer to 0 to have a clean starting buffer
+# Method to reset the requestBuffer to 0 to have a clean starting buffer
     
     def clearRequestBuffer(self):
-        # no more than 5 bytes are written to the buffer
-        for i in range(0,5):
+        for i in range(0,63):
             self.requestBuffer[i]=0
             
- # this method looks for logger attached via USB on the system 
+# this method looks for logger attached via USB on the system 
 
     def findDevices(self):
         self.lastDeviceCheck = math.floor(time.time())
@@ -153,7 +170,7 @@ class TLX00(object):
                     logging.error("Error resetting device: %s" % ne)
                 self.devices.remove(d)
     
-  # Method to set the time on the logging device   
+# Method to set the time on the logging device   
     
     def setTime(self,device):
         logging.debug("Setting time for USB device at Bus %d Address %d Port Number %d" % (device.bus,device.address,device.port_number))
@@ -176,7 +193,7 @@ class TLX00(object):
         except Exception as e:
             logging.error("Error setting time: %s",e)
 
-   # Mehtod will delete the internal flash data of the Logger. this done by preparing the buffer and send it to the logger
+# Mehtod will delete the internal flash data of the Logger. this done by preparing the buffer and send it to the logger
         
     def deleteDeviceData(self,device):
         logging.debug("deleting internal Flash data of USB device at Bus %d Address %d Port Number %d" % (device.bus,device.address,device.port_number))
@@ -236,9 +253,9 @@ class TLX00(object):
                     
                 datapoints.append({'sensorid': sensorid, 'rawvalue': rawvalue, 'timestamp': timestamp+self.TIME_OFFSET, 'signal':signal, 'sensor': self.sensors[sensorid]})
                 # logging.info("Found Datapoint from sensor %d with value %d" % (sensorid,rawvalue))
-                pos+=8
+                pos+=data[pos]-1
                 continue
-            if data[pos] == 12 and pos < 53:
+            if (data[pos] == 11 or data[pos] == 12) and pos < 53:
                 sensorid = int.from_bytes([data[pos+1],data[pos+2],data[pos+3],data[pos+4]], byteorder = 'little', signed=False)
 
                 rawvalue = int.from_bytes([data[pos+5],data[pos+6]], byteorder = 'big', signed=False)
@@ -251,7 +268,7 @@ class TLX00(object):
                     
                 datapoints.append({'sensorid': sensorid, 'rawvalue': rawvalue, 'timestamp': timestamp+self.TIME_OFFSET, 'signal':signal, 'sensor': self.sensors[sensorid]})
                 # logging.info("Found Datapoint from sensor %d with value %d" % (sensorid,rawvalue))
-                pos+=11
+                pos+=data[pos]-1
                 continue
                 
             # logging.debug("Parser: Nothing found at pos %d"%pos)
@@ -297,12 +314,12 @@ class TLX00(object):
                         if rawdata[0]==0 and rawdata[1]==0: 
                             # no new data
                             break
-                        dev.lastTimeDataRead = int(time.time()) # store new time of new retrived data
+                        dev.lastTimeDataRead = int(time.time()) # store new time of new retrieved data
                         datapoints = self.parseData(rawdata) # method to get process buffer data into usable data  
                         # notify listeners
                         for datapoint in datapoints:
                             for l in self.listeners:
-                                l.onNewData(datapoint) # invoke mehtod to share new data to the listernersmath.floor(time.time())math.floor(time.time())
+                                l.onNewData(datapoint) # invoke method to share new data to the listernersmath.floor(time.time())math.floor(time.time())
                         founddata += len(datapoints)
                         readcount += 1
                         if founddata == 0 and readcount > 5:
