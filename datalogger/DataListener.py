@@ -37,7 +37,7 @@ class LoggingListener(DataListener):
 
     def onNewData(self, data):
         logging.info("Datapoint: sensorid %s, raw data: %d cooked: %f %s timestamp: %d from sensor %s type %s" % (
-        data['sensorid'], data['rawvalue'], data['sensor'].rawToCooked(data['rawvalue']), data['sensor'].unit,
+        data['sensor'].displayid, data['rawvalue'], data['sensor'].rawToCooked(data['rawvalue']), data['sensor'].unit,
         data['timestamp'], data['sensor'].name, data['sensor'].type))
 
 class InfluxDBListener(DataListener):
@@ -59,7 +59,7 @@ class InfluxDBListener(DataListener):
                 "measurement": "arexx",
                 "tags": {
                     "Location": data['sensor'].name,
-                    "sensorid": data['sensorid'],
+                    "sensorid": data['sensor'].displayid,
                     "SensorType": data['sensor'].type,
                     "Unit": data['sensor'].unit
                 },
@@ -88,7 +88,7 @@ class Sqlite3Listener(DataListener):
         sqlTable = '''CREATE TABLE IF NOT EXISTS pylarexx (id INTEGER PRIMARY KEY, timestamp long, Location string, sensorid integer, SensorType string, SensorValue float, Unit string);'''
         sqlValues ='''INSERT INTO pylarexx (timestamp, Location, sensorid, SensorType, SensorValue, Unit) VALUES (?,?,?,?,?,?);'''
 
-        data_tuple = (data['timestamp'], data['sensor'].name, data['sensorid'],data['sensor'].type,data['sensor'].rawToCooked(data['rawvalue']),data['sensor'].unit)
+        data_tuple = (data['timestamp'], data['sensor'].name, data['sensor'].displayid,data['sensor'].type,data['sensor'].rawToCooked(data['rawvalue']),data['sensor'].unit)
 
         curs.execute(sqlTable)
         curs.execute(sqlValues,data_tuple)
@@ -126,7 +126,7 @@ class FileOutListener(DataListener):
             else:
                 signaltext = str(data['signal'])
             self.fd.write('%d,%d,%f %s,%d,%s,%s,%s\n' % (
-            data['sensorid'], data['rawvalue'], data['sensor'].rawToCooked(data['rawvalue']), data['sensor'].unit,
+            data['sensor'].displayid, data['rawvalue'], data['sensor'].rawToCooked(data['rawvalue']), data['sensor'].unit,
             data['timestamp'], signaltext, data['sensor'].name, data['sensor'].type))
 
 
@@ -179,7 +179,7 @@ class RecentValuesListener(DataListener):
             logging.error("Unable to start TCP Server: %s", e)
 
     def onNewData(self, data):
-        self.values[data['sensorid']] = data
+        self.values[data['sensor'].displayid] = data
         if not self.ready:
             self.openListeningPort()
 
@@ -236,16 +236,16 @@ class MQTTListener(DataListener):
     def sendHomeAssistantMessage(self, data):
         try:
             newSensor = False
-            self.values[data['sensorid']]
+            self.values[data['sensor'].displayid]
         except Exception as e:
             newSensor = True
         if self.ready:
             try:
                 topicroot = '%s/%s' % (self.params.get('mqtt_base_topic', 'homeassistant'), 'sensor')
                 topicconfig = '%s/%s_%s/config' % (
-                topicroot, self.params.get('mqtt_device', 'pylarexx'), data['sensorid'])
+                topicroot, self.params.get('mqtt_device', 'pylarexx'), data['sensor'].displayid)
                 topicstate = '%s/%s_%s/state' % (
-                topicroot, self.params.get('mqtt_device', 'pylarexx'), data['sensorid'])
+                topicroot, self.params.get('mqtt_device', 'pylarexx'), data['sensor'].displayid)
 
                 if newSensor:
                     logging.debug('New Sensor config')
@@ -270,10 +270,10 @@ class MQTTListener(DataListener):
     def sendHomieMessages(self, data):
         try:
             newSensor = False
-            self.values[data['sensorid']]
+            self.values[data['sensor'].displayid]
         except Exception as e:
             newSensor = True
-        self.values[data['sensorid']] = data
+        self.values[data['sensor'].displayid] = data
         if self.ready:
             try:
                 topicroot = '%s/%s' % (
@@ -313,7 +313,7 @@ class MQTTListener(DataListener):
                                                 '%.2f' % value['sensor'].rawToCooked(value['rawvalue']))
                 else:
                     logging.debug("Sending MQTT sensor values")
-                    sid = data['sensorid']
+                    sid = data['sensor'].displayid
                     self.mqttClient.publish('%s/sensor_%d/$type' % (topicroot, sid), data['sensor'].manufacturerType)
                     self.mqttClient.publish('%s/sensor_%d/$name' % (topicroot, sid), data['sensor'].name)
                     self.mqttClient.publish('%s/sensor_%d/$properties' % (topicroot, sid), data['sensor'].type.lower())

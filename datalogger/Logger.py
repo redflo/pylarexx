@@ -318,8 +318,12 @@ class TLX00(object):
                         datapoints = self.parseData(rawdata) # method to get process buffer data into usable data  
                         # notify listeners
                         for datapoint in datapoints:
-                            for l in self.listeners:
-                                l.onNewData(datapoint) # invoke method to share new data to the listernersmath.floor(time.time())math.floor(time.time())
+                            cooked=datapoint["sensor"].rawToCooked(datapoint["rawvalue"])
+                            if cooked > datapoint["sensor"].valmax or cooked < datapoint["sensor"].valmin:
+                                logging.info("Datapoint outside range. Ignoring.")
+                            else:
+                                for l in self.listeners:
+                                    l.onNewData(datapoint) # invoke method to share new data to the listerners
                         founddata += len(datapoints)
                         readcount += 1
                         if founddata == 0 and readcount > 5:
