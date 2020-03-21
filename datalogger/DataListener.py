@@ -155,9 +155,9 @@ class RecentValuesListener(DataListener):
                         signaltext = "-"
                     else:
                         signaltext = str(data['signal'])
-                    response += '%d,%f %s,%d,%s,%s,%s\n' % (
-                    sid, data['sensor'].rawToCooked(data['rawvalue']), data['sensor'].unit, data['timestamp'],
-                    signaltext, data['sensor'].type, data['sensor'].name)
+                    response += '%d,%f %s,%d,%s,%s,%s,%s\n' % (
+                    data['sensor'].displayid, data['sensor'].rawToCooked(data['rawvalue']), data['sensor'].unit, data['timestamp'],
+                    signaltext, data['sensor'].type, data['sensor'].name, data['sensor'].id)
 
                 self.request.sendall(bytes(response, 'UTF-8'))
 
@@ -179,7 +179,7 @@ class RecentValuesListener(DataListener):
             logging.error("Unable to start TCP Server: %s", e)
 
     def onNewData(self, data):
-        self.values[data['sensor'].displayid] = data
+        self.values[data['sensor'].id] = data
         if not self.ready:
             self.openListeningPort()
 
