@@ -68,8 +68,8 @@ class ArexxSensorDetector:
     
     def detectDevice(self,sensor_id):
         for dt in ArexxSensorDetector.arexxDeviceInfo:
-            if sensor_id & dt['m1'] == dt['m2']: # the magic behind m1 and m2
-                displayid = sensor_id & dt['dm']
+            if int(sensor_id) & dt['m1'] == dt['m2']: # the magic behind m1 and m2
+                displayid = int(sensor_id) & dt['dm']
                 newSensor = ArexxSensor(sensor_id,displayid,dt['manufacturerType'],dt['type'], dt['unit'], dt['vLo'], dt['vUp'], dt['p0'], dt['p1'], dt['p2'])
                 return newSensor
         return False

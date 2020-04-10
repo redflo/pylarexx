@@ -57,13 +57,19 @@ class TLX00(object):
                     if 'name' in sensor:
                         name=sensor['name']
                     logging.info("Adding Sensor from config file: %d %s %s"%(sensorid,sensortype,name))
+                    # Todo: Sensortype weg machen 
                     if sensortype in ('TL-3TSN','TSN-50E','TSN-EXT44','TSN-33MN'):
                         self.sensors[sensorid]=datalogger.Sensor.ArexxTemperatureSensor(sensorid,sensortype,name)
                     elif sensortype in ('TSN-TH70E', 'TSN-TH77ext'):
                         self.sensors[sensorid]=datalogger.Sensor.ArexxTemperatureSensor(sensorid,sensortype,name)
                         self.sensors[sensorid+1]=datalogger.Sensor.ArexxHumiditySensor(sensorid+1,sensortype,name)
                     else:
-                        self.addSensor(sensorid,name)
+                        detected_sensor = self.detectSensor(sensorid, name)
+                        if detected_sensor != False:
+                            self.addSensor(detected_sensor)
+                        else:
+                            self.sensors[sensorid]= datalogger.Sensor.Sensor(sensorid)
+                            self.sensors[sensorid].setName(name)
             except Exception as e:
                 logging.error('Error in config section sensors: %s',e)
                 logging.debug('Stacktrace: ',exc_info=True)
@@ -97,25 +103,47 @@ class TLX00(object):
         if 'config' in self.config:
             if 'DetectUnknownSensors' in self.config['config']:
                 self.detectUnknownSensors=bool(self.config['config']['DetectUnknownSensors'])
+    
+    # detect sensor and return it. Returns False, if no sensor was detected.
+    # If detectUnknownSensors is set to false, return a sensor only if it is in config via displayid
  
-
-
-    def addSensor(self,sensorid,name=None):
+    def detectSensor(self,sensorid,name=None):
         detector= ArexxSensorDetector()
         detected_sensor= detector.detectDevice(sensorid)
+        is_in_config=False
         if detected_sensor != False:
-            logging.debug(pformat(detected_sensor))
+            logging.debug("Detected Sensor: %s(%s)" % (detected_sensor.id, detected_sensor.type) )
             if name != None:
                 detected_sensor.setName(name)
             else:# check if we have a sensor in config with the same display id. Then copy name
                 for sensor in self.sensors.items():
-                    logging.debug(pformat(sensor))
                     if sensor[1].displayid == detected_sensor.displayid:
                         detected_sensor.setName(sensor[1].name)
-            self.sensors[sensorid] = detected_sensor
-            return True
+                        logging.info("Setting name of detected sensor to: %s" % detected_sensor.name)
+                        is_in_config=True
+        if self.detectUnknownSensors or is_in_config:
+            return detected_sensor
         return False
-            
+    
+    # checks if data match to sensor value range and time   
+    def validateSensorData(self,data,sensor):
+        if abs(time.time() - data["timestamp"]) > 4000: # On DST changes we can get 3600sec difference.
+            logging.info("validateSensorData: timestamp invalid")
+            return False
+        cooked=sensor.rawToCooked(data["rawvalue"])
+        if cooked > sensor.valmax or cooked < sensor.valmin:
+            logging.info("validateSensorData: Datapoint outside range. Ignoring.")
+            return False
+        return True
+
+    def addSensor(self,detected_sensor):
+        logging.info("Adding Sensor %s",detected_sensor.name)
+        self.sensors[detected_sensor.id] = detected_sensor
+         
+    def removeSensor(self,sensorid):
+        logging.info("Removing Sensor %s", self.sensors[sensorid].name)
+        self.sensors.pop(sensorid)
+
 # Method to reset the requestBuffer to 0 to have a clean starting buffer
     
     def clearRequestBuffer(self):
@@ -248,10 +276,8 @@ class TLX00(object):
                 signal=None
                 if data[pos] == 10:
                     signal = int.from_bytes([data[pos+9]],byteorder = 'little', signed=False)
-                if self.detectUnknownSensors and sensorid not in self.sensors: #todo: Add sensor, if displayid in sensors and detectUnknownSensors=false
-                    self.addSensor(sensorid)
-                    
-                datapoints.append({'sensorid': sensorid, 'rawvalue': rawvalue, 'timestamp': timestamp+self.TIME_OFFSET, 'signal':signal, 'sensor': self.sensors[sensorid]})
+      
+                datapoints.append({'sensorid': sensorid, 'rawvalue': rawvalue, 'timestamp': timestamp+self.TIME_OFFSET, 'signal':signal})
                 # logging.info("Found Datapoint from sensor %d with value %d" % (sensorid,rawvalue))
                 pos+=data[pos]-1
                 continue
@@ -266,7 +292,7 @@ class TLX00(object):
                 if self.detectUnknownSensors and sensorid not in self.sensors:
                     self.addSensor(sensorid)
                     
-                datapoints.append({'sensorid': sensorid, 'rawvalue': rawvalue, 'timestamp': timestamp+self.TIME_OFFSET, 'signal':signal, 'sensor': self.sensors[sensorid]})
+                datapoints.append({'sensorid': sensorid, 'rawvalue': rawvalue, 'timestamp': timestamp+self.TIME_OFFSET, 'signal':signal})
                 # logging.info("Found Datapoint from sensor %d with value %d" % (sensorid,rawvalue))
                 pos+=data[pos]-1
                 continue
@@ -318,12 +344,17 @@ class TLX00(object):
                         datapoints = self.parseData(rawdata) # method to get process buffer data into usable data  
                         # notify listeners
                         for datapoint in datapoints:
-                            cooked=datapoint["sensor"].rawToCooked(datapoint["rawvalue"])
-                            if cooked > datapoint["sensor"].valmax or cooked < datapoint["sensor"].valmin:
-                                logging.info("Datapoint outside range. Ignoring.")
-                            else:
-                                for l in self.listeners:
-                                    l.onNewData(datapoint) # invoke method to share new data to the listerners
+                            sensorid=str(datapoint["sensorid"])
+                            if sensorid not in self.sensors:
+                                detected_sensor=self.detectSensor(sensorid)
+                                if detected_sensor != False:
+                                    if self.validateSensorData(datapoint, detected_sensor):
+                                        self.addSensor(detected_sensor)
+                            if sensorid in self.sensors:
+                                sensor=self.sensors[sensorid]
+                                if self.validateSensorData(datapoint, sensor):
+                                    for l in self.listeners:
+                                        l.onNewData(datapoint, sensor) # invoke method to share new data to the listerners
                         founddata += len(datapoints)
                         readcount += 1
                         if founddata == 0 and readcount > 5:

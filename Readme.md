@@ -2,9 +2,9 @@
 
 Pylarexx searches the USB bus for [Arexx](http://www.arexx.com/templogger/html/en/index.php) BS-500 / BS-510 / TL-500 / TL-510 devices, and constantly reads sensor data. It can be configured to name the sensors, add calibration values and configure output modules.
 
-At the moment the BS-510 / TL-510 devices are experimental supported, since i have no such device. New Arexx sensors have id values that exceed 2 bytes and need this newer device. Would be nice, if someone sends me a device or a patch.
+At the moment the BS-510 / TL-510 devices are experimental supported, since i have no such device. New Arexx sensors have id values that exceed 2 bytes and need this newer device.
 
-The sensors that i have tested are TSN-TH70E and TL-3TSN, both with 2-byte id numbers (<65536). If you have other sensors (CO2, ...), you can send me sensors or debugging output, and i will try to add them.
+The sensors that i have tested are TSN-TH70E and TL-3TSN, both with 2-byte id numbers (<65536). If you have other sensors (CO2, ...), you can try, if they work. If not, send me sensors or debugging output, and i will try to add them.
 `
 The protocol and interpretation of values for supported devices is explained in Protocol.txt and sensors.txt
   
