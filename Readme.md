@@ -47,6 +47,8 @@ At *calibration* you can add calibration values. Usually the values for temperat
 
 With the values List, you can alter p0, p1 .... as shown in the example config.
 
+*Note* Latest changes broke calibration with sensors with more than one sensor (Temp + RH). Will be fixed soon.
+
 ### Output
 
 At *output* you can add one or more DataListeners and configure them. You can also add one type of DataListener more then one time.
