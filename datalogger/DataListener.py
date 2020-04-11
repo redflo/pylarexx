@@ -262,12 +262,16 @@ class MQTTListener(DataListener):
                     unit_of_measurement = sensor.unit
                     if unit_of_measurement == '%RH':
                         unit_of_measurement = '%'
+                    
+                    stype=sensor.type.lower()
+                    if stype == "relative humidity":
+                        stype="humidity"
 
                     payload = {'name': '%s %s' % (sensor.name, sensor.type),
-                               'device_class': sensor.type.lower(),
+                               'device_class': stype,
                                'state_topic': topicstate,
                                'unit_of_measurement': unit_of_measurement,
-                               'value_template': '{{value_json.%s}}' % sensor.type.lower(),
+                               'value_template': '{{value_json.%s}}' % stype,
                                }
                     self.mqttClient.publish(topicconfig, json.dumps(payload), 0, True)
                 statePayload = {}
