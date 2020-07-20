@@ -56,7 +56,7 @@ def main(argv=None): # IGNORE:C0111
 
   Created by Florian Gleixner on %s.
   Copyright 2017. All rights reserved.
-  
+
   pylarexx is licensed under the Apache License, version 2, see License.txt
 
   Distributed on an "AS IS" basis without warranties
@@ -83,10 +83,10 @@ USAGE
         if verbose > 3:
             verbose=3
 
-        logginglevels={0:logging.ERROR, 1:logging.WARN, 2:logging.INFO, 3:logging.DEBUG}
+        logginglevels={0: logging.ERROR, 1: logging.WARN, 2: logging.INFO, 3: logging.DEBUG}
         logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(filename)s:%(lineno)s - %(funcName)s -  %(message)s', level=logginglevels[verbose])
+        logging.getLogger().setLevel(logginglevels[verbose])
         logging.info("log level %d" % logginglevels[verbose])
-
 
     except KeyboardInterrupt:
         ### handle keyboard interrupt ###
@@ -106,7 +106,7 @@ USAGE
     myDataLogger.findDevices()
     myDataLogger.initializeDevices()
     myDataLogger.loop()
-    
+
 
 
 if __name__ == "__main__":
