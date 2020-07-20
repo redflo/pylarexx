@@ -132,7 +132,7 @@ class TLX00(object):
             logging.info("validateSensorData: timestamp %s is stale. Is a buffering receiver used?", datetime.fromtimestamp(data["timestamp"]).strftime('%Y-%m-%d %H:%M:%S'))
         cooked=sensor.rawToCooked(data["rawvalue"])
         if cooked > sensor.valmax or cooked < sensor.valmin:
-            logging.info("validateSensorData: Datapoint %f outside range (%f/%f). Ignoring." % (cooked, sensor.valmin, sensor.valmax)
+            logging.info("validateSensorData: Datapoint %f outside range (%f/%f). Ignoring." % (cooked, sensor.valmin, sensor.valmax))
             return False
         return True
 
