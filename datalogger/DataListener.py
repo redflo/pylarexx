@@ -1,6 +1,6 @@
 '''
 Created on 23.11.2017
-updated on 19.01.2020 
+updated on 19.01.2020
 
 @author: Florian Gleixner
 @Updater: Inonoob
@@ -16,10 +16,16 @@ import time
 import logging
 import socketserver
 import threading
-import paho.mqtt.client as mqtt
+try:
+    import paho.mqtt.client as mqtt
+except ModuleNotFoundError:
+    logging.warn('No mqtt support')
 import json
 import sqlite3
-from influxdb import InfluxDBClient
+try:
+    from influxdb import InfluxDBClient
+except ModuleNotFoundError:
+    logging.warn('No influxdb support')
 from datetime import datetime
 
 class DataListener(object):
@@ -47,12 +53,15 @@ class InfluxDBListener(DataListener):
         self.port = self.params.get('port','8086')
         self.user = self.params.get('user','pi')
         self.password = self.params.get('password','raspberry')
-        self.dbname = self.params.get('database')
+        self.dbname = self.params.get('dbname')
 
     def onNewData(self, data, sensor):
         client = InfluxDBClient(self.host, self.port, self.user, self.password, self.dbname)
-        client.switch_database('arexx')
-        current_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+        if 'timestamp' in data:
+            timestamp = datetime.utcfromtimestamp(data["timestamp"]).strftime('%Y-%m-%dT%H:%M:%SZ')
+        else:
+            timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+
 
         json_body = [
             {
@@ -63,7 +72,7 @@ class InfluxDBListener(DataListener):
                     "SensorType": sensor.type,
                     "Unit": sensor.unit
                 },
-                "time": current_time,
+                "time": timestamp,
                 "fields": {
                     "SensorValue": sensor.rawToCooked(data['rawvalue'])
                 }
@@ -128,7 +137,7 @@ class FileOutListener(DataListener):
             self.fd.write('%d,%d,%f %s,%d,%s,%s,%s\n' % (
             sensor.displayid, data['rawvalue'], sensor.rawToCooked(data['rawvalue']), sensor.unit,
             data['timestamp'], signaltext, sensor.name, sensor.type))
-            
+
     def __del__(self):
         self.fd.close()
 
