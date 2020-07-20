@@ -1,0 +1,4 @@
+pyusb
+paho-mqtt
+influxdb
+pyaml
