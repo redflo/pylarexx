@@ -2,3 +2,7 @@ pyusb
 paho-mqtt
 influxdb
 pyaml
+
+# or on openSUSE 15.1
+python3-usb
+python3-pyaml

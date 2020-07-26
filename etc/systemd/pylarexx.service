@@ -5,6 +5,8 @@ Description=Python Logger Arexx Daemon
 Type=simple
 ExecStart=/usr/local/pylarexx/pylarexx.py -f /etc/pylarexx.yml
 WorkingDirectory=/usr/local/pylarexx
+User=pylarexx
+Group=pylarexx
 
 [Install]
 WantedBy=multi-user.target
