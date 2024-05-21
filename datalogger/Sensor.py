@@ -169,3 +169,15 @@ class ArexxHumiditySensor(Sensor):
         c1=self.calibrationValues.get(1,0.0)
         c2=self.calibrationValues.get(2,0.0)
         return -4.0 +c0 + raw*(0.0405+c1) + raw*raw*(-0.0000028+c2)
+
+class ArexxCO2Sensor(Sensor):
+
+    def __init__(self, sensorid, manufacturerType, name):
+        super().__init__(sensorid)
+        self.setType("CO2").setUnit("ppm").setName(name).setManufacturerType(manufacturerType)
+
+    def rawToCooked(self,raw):
+        c0=self.calibrationValues.get(0,0.0)
+        c1=self.calibrationValues.get(1,0.0)
+        c2=self.calibrationValues.get(2,0.0)
+        return c0 + raw*(1.0+c1) + raw*raw*(0.00000+c2)

@@ -64,7 +64,11 @@ class TLX00(object):
                     elif sensortype in ('TSN-TH70E', 'TSN-TH77ext'):
                         self.sensors[sensorid]=datalogger.Sensor.ArexxTemperatureSensor(sensorid,sensortype,name)
                         self.sensors[sensorid+1]=datalogger.Sensor.ArexxHumiditySensor(sensorid+1,sensortype,name)
+                    elif sensortype in ('TSN-CO2'):
+                        self.sensors[sensorid]=datalogger.Sensor.ArexxTemperatureSensor(sensorid,sensortype,name)
+                        self.sensors[sensorid+1]=datalogger.Sensor.ArexxCO2Sensor(sensorid+1,sensortype,name)
                     else:
+                        # Bug? TSN-TH70E #20444 is not added by this code
                         detected_sensor = self.detectSensor(sensorid, name)
                         if detected_sensor != False:
                             self.addSensor(detected_sensor)

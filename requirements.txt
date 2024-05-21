@@ -6,3 +6,7 @@ pyaml
 # or on openSUSE 15.1
 python3-usb
 python3-pyaml
+
+# or on debian 10
+python3-usb
+python3-yaml

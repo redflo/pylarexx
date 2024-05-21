@@ -61,6 +61,7 @@
 		<p1>0.0078125</p1>
 	</devicetype>
 	<devicetype>
+		<manufacturerType>TSN-CO2</manufacturerType>
 		<m1>FFFFF001</m1>
 		<m2>3001</m2>
 		<type>CO2 concentration</type>
