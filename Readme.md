@@ -105,6 +105,7 @@ At *config* there are some other configuration options:
 ## Known integrations
 
 [check_mk - old](https://github.com/redflo/check_mk-arexx/)
+
 [munin](https://github.com/geraet2/pylarexx_munin)
 
 ## License
