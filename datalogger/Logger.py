@@ -44,7 +44,7 @@ class TLX00(object):
     def readConfigFile(self,filename):
         with open(filename) as f:
             content=f.read()
-            self.config=yaml.load(content)
+            self.config=yaml.load(content, Loader=yaml.SafeLoader)
             logging.debug(self.config)
 
         if 'sensors' in self.config:
