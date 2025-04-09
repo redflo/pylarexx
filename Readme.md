@@ -102,6 +102,12 @@ At *config* there are some other configuration options:
 
 ![alt text](https://raw.githubusercontent.com/inonoob/pylarexx/master/Screenshot%20from%202020-01-28%2020-29-39.png)
 
+## Known integrations
+
+[check_mk - old](https://github.com/redflo/check_mk-arexx/)
+
+[munin](https://github.com/geraet2/pylarexx_munin)
+
 ## License
 
 pylarexx is licensed under the Apache License, version 2, see License.txt.
